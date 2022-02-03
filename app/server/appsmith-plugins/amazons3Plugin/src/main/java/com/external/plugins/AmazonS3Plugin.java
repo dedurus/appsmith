@@ -72,17 +72,15 @@ import static com.appsmith.external.helpers.PluginUtils.getValueSafelyFromFormDa
 import static com.appsmith.external.helpers.PluginUtils.parseWhereClause;
 import static com.external.plugins.constants.FieldName.BUCKET;
 import static com.external.plugins.constants.FieldName.COMMAND;
-import static com.external.plugins.constants.FieldName.CREATE_DATATYPE;
-import static com.external.plugins.constants.FieldName.CREATE_EXPIRY;
-import static com.external.plugins.constants.FieldName.LIST_EXPIRY;
-import static com.external.plugins.constants.FieldName.LIST_PREFIX;
-import static com.external.plugins.constants.FieldName.LIST_SIGNED_URL;
-import static com.external.plugins.constants.FieldName.LIST_UNSIGNED_URL;
-import static com.external.plugins.constants.FieldName.LIST_WHERE;
+import static com.external.plugins.constants.FieldName.DATATYPE;
+import static com.external.plugins.constants.FieldName.EXPIRY;
 import static com.external.plugins.constants.FieldName.PATH;
-import static com.external.plugins.constants.FieldName.READ_USING_BASE64_ENCODING;
-import static com.external.utils.TemplateUtils.getTemplates;
+import static com.external.plugins.constants.FieldName.PREFIX;
+import static com.external.plugins.constants.FieldName.SIGNED_URL;
+import static com.external.plugins.constants.FieldName.UNSIGNED_URL;
+import static com.external.plugins.constants.FieldName.WHERE;
 import static com.external.utils.DatasourceUtils.getS3ClientBuilder;
+import static com.external.utils.TemplateUtils.getTemplates;
 import static java.lang.Boolean.TRUE;
 
 public class AmazonS3Plugin extends BasePlugin {
@@ -539,23 +537,23 @@ public class AmazonS3Plugin extends BasePlugin {
                 Object actionResult;
                 switch (s3Action) {
                     case LIST:
-                        String prefix = (String) getValueSafelyFromFormDataOrDefault(formData, LIST_PREFIX, "");
-                        requestParams.add(new RequestParamDTO(LIST_PREFIX,
+                        String prefix = (String) getValueSafelyFromFormDataOrDefault(formData, PREFIX, "");
+                        requestParams.add(new RequestParamDTO(PREFIX,
                                 prefix, null, null, null));
 
                         ArrayList<String> listOfFiles = listAllFilesInBucket(connection, bucketName, prefix);
 
-                        Boolean isSignedUrl = YES.equals(getValueSafelyFromFormData(formData, LIST_SIGNED_URL));
+                        Boolean isSignedUrl = YES.equals(getValueSafelyFromFormData(formData, SIGNED_URL));
 
                         if (isSignedUrl) {
-                            requestParams.add(new RequestParamDTO(LIST_SIGNED_URL, YES, null,
+                            requestParams.add(new RequestParamDTO(SIGNED_URL, YES, null,
                                     null, null));
 
                             int durationInMinutes;
 
                             try {
                                 durationInMinutes = Integer.parseInt((String) getValueSafelyFromFormDataOrDefault(formData,
-                                        LIST_EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
+                                        EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
                             } catch (NumberFormatException e) {
                                 return Mono.error(new AppsmithPluginException(
                                         AppsmithPluginError.PLUGIN_EXECUTE_ARGUMENT_ERROR,
@@ -566,7 +564,7 @@ public class AmazonS3Plugin extends BasePlugin {
                                 ));
                             }
 
-                            requestParams.add(new RequestParamDTO(LIST_EXPIRY,
+                            requestParams.add(new RequestParamDTO(EXPIRY,
                                     durationInMinutes, null, null, null));
 
                             Calendar calendar = Calendar.getInstance();
@@ -597,7 +595,7 @@ public class AmazonS3Plugin extends BasePlugin {
                                 ((ArrayList<Object>) actionResult).add(fileInfo);
                             }
                         } else {
-                            requestParams.add(new RequestParamDTO(LIST_SIGNED_URL,
+                            requestParams.add(new RequestParamDTO(SIGNED_URL,
                                     "", null, null, null));
                             actionResult = new ArrayList<>();
                             for (int i = 0; i < listOfFiles.size(); i++) {
@@ -607,11 +605,11 @@ public class AmazonS3Plugin extends BasePlugin {
                             }
                         }
 
-                        String isUnsignedUrl = (String) getValueSafelyFromFormData(formData, LIST_UNSIGNED_URL);
+                        String isUnsignedUrl = (String) getValueSafelyFromFormData(formData, UNSIGNED_URL);
 
                         if (YES.equals(isUnsignedUrl)) {
 
-                            requestParams.add(new RequestParamDTO(LIST_UNSIGNED_URL, YES, null,
+                            requestParams.add(new RequestParamDTO(UNSIGNED_URL, YES, null,
                                     null, null));
                             ((ArrayList<Object>) actionResult).stream()
                                     .forEach(item -> ((Map) item)
@@ -621,12 +619,12 @@ public class AmazonS3Plugin extends BasePlugin {
                                             )
                                     );
                         } else {
-                            requestParams.add(new RequestParamDTO(LIST_UNSIGNED_URL, NO, null,
+                            requestParams.add(new RequestParamDTO(UNSIGNED_URL, NO, null,
                                     null, null));
                         }
 
                         // Check if where condition is configured
-                        Object whereFormObject = getValueSafelyFromFormData(formData, LIST_WHERE);
+                        Object whereFormObject = getValueSafelyFromFormData(formData, WHERE);
 
                         if (whereFormObject != null) {
                             Map<String, Object> whereForm = (Map<String, Object>) whereFormObject;
@@ -645,7 +643,7 @@ public class AmazonS3Plugin extends BasePlugin {
 
                         try {
                             durationInMinutes = Integer.parseInt((String) getValueSafelyFromFormDataOrDefault(formData,
-                                    CREATE_EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
+                                    EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
                         } catch (NumberFormatException e) {
                             return Mono.error(new AppsmithPluginException(
                                     AppsmithPluginError.PLUGIN_EXECUTE_ARGUMENT_ERROR,
@@ -666,14 +664,14 @@ public class AmazonS3Plugin extends BasePlugin {
 
                         String signedUrl;
 
-                        String dataType = (String) getValueSafelyFromFormData(formData, CREATE_DATATYPE);
+                        String dataType = (String) getValueSafelyFromFormData(formData, DATATYPE);
 
                         if (YES.equals(dataType)) {
-                            requestParams.add(new RequestParamDTO(CREATE_DATATYPE, "Base64",
+                            requestParams.add(new RequestParamDTO(DATATYPE, "Base64",
                                     null, null, null));
                             signedUrl = uploadFileFromBody(connection, bucketName, path, body, true, expiryDateTime);
                         } else {
-                            requestParams.add(new RequestParamDTO(CREATE_DATATYPE,
+                            requestParams.add(new RequestParamDTO(DATATYPE,
                                     "Text / Binary", null, null, null));
                             signedUrl = uploadFileFromBody(connection, bucketName, path, body, false, expiryDateTime);
                         }
@@ -681,7 +679,7 @@ public class AmazonS3Plugin extends BasePlugin {
                         ((HashMap<String, Object>) actionResult).put("signedUrl", signedUrl);
                         ((HashMap<String, Object>) actionResult).put("urlExpiryDate", expiryDateTimeString);
 
-                        requestParams.add(new RequestParamDTO(CREATE_EXPIRY,
+                        requestParams.add(new RequestParamDTO(EXPIRY,
                                 expiryDateTimeString, null, null, null));
                         requestParams.add(new RequestParamDTO(ACTION_CONFIGURATION_BODY, body, null, null, null));
                         break;
@@ -693,7 +691,7 @@ public class AmazonS3Plugin extends BasePlugin {
 
                         try {
                             durationInMinutes = Integer.parseInt((String) getValueSafelyFromFormDataOrDefault(formData,
-                                    CREATE_EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
+                                    EXPIRY, DEFAULT_URL_EXPIRY_IN_MINUTES));
                         } catch (NumberFormatException e) {
                             return Mono.error(new AppsmithPluginException(
                                     AppsmithPluginError.PLUGIN_EXECUTE_ARGUMENT_ERROR,
@@ -714,14 +712,14 @@ public class AmazonS3Plugin extends BasePlugin {
 
                         List<String> signedUrls;
 
-                        String dataType = (String) getValueSafelyFromFormData(formData, CREATE_DATATYPE);
+                        String dataType = (String) getValueSafelyFromFormData(formData, DATATYPE);
 
                         if (YES.equals(dataType)) {
-                            requestParams.add(new RequestParamDTO(CREATE_DATATYPE, "Base64",
+                            requestParams.add(new RequestParamDTO(DATATYPE, "Base64",
                                     null, null, null));
                             signedUrls = uploadMultipleFilesFromBody(connection, bucketName, path, body, true, expiryDateTime);
                         } else {
-                            requestParams.add(new RequestParamDTO(CREATE_DATATYPE,
+                            requestParams.add(new RequestParamDTO(DATATYPE,
                                     "Text / Binary", null, null, null));
                             signedUrls = uploadMultipleFilesFromBody(connection, bucketName, path, body, false, expiryDateTime);
                         }
@@ -729,7 +727,7 @@ public class AmazonS3Plugin extends BasePlugin {
                         ((HashMap<String, Object>) actionResult).put("signedUrls", signedUrls);
                         ((HashMap<String, Object>) actionResult).put("urlExpiryDate", expiryDateTimeString);
 
-                        requestParams.add(new RequestParamDTO(CREATE_EXPIRY,
+                        requestParams.add(new RequestParamDTO(EXPIRY,
                                 expiryDateTimeString, null, null, null));
                         requestParams.add(new RequestParamDTO(ACTION_CONFIGURATION_BODY, body, null, null, null));
                         break;
@@ -739,14 +737,14 @@ public class AmazonS3Plugin extends BasePlugin {
 
                         String result;
 
-                        String isBase64 = (String) getValueSafelyFromFormData(formData, READ_USING_BASE64_ENCODING);
+                        String isBase64 = (String) getValueSafelyFromFormData(formData, DATATYPE);
 
                         if (YES.equals(isBase64)) {
-                            requestParams.add(new RequestParamDTO(READ_USING_BASE64_ENCODING,
+                            requestParams.add(new RequestParamDTO(DATATYPE,
                                     YES, null, null, null));
                             result = readFile(connection, bucketName, path, true);
                         } else {
-                            requestParams.add(new RequestParamDTO(READ_USING_BASE64_ENCODING,
+                            requestParams.add(new RequestParamDTO(DATATYPE,
                                     NO, null, null, null));
                             result = readFile(connection, bucketName, path, false);
                         }
@@ -770,13 +768,13 @@ public class AmazonS3Plugin extends BasePlugin {
                      * intact for future use.
 
                      case LIST_BUCKETS:
-                        List<String> bucketNames = connection.listBuckets()
-                                .stream()
-                                .map(Bucket::getName)
-                                .collect(Collectors.toList());
-                        actionResult = Map.of("bucketList", bucketNames);
-                        break;
-                    */
+                     List<String> bucketNames = connection.listBuckets()
+                     .stream()
+                     .map(Bucket::getName)
+                     .collect(Collectors.toList());
+                     actionResult = Map.of("bucketList", bucketNames);
+                     break;
+                     */
                     default:
                         return Mono.error(new AppsmithPluginException(
                                 AppsmithPluginError.PLUGIN_ERROR,
@@ -968,28 +966,28 @@ public class AmazonS3Plugin extends BasePlugin {
         public Mono<DatasourceStructure> getStructure(AmazonS3 connection, DatasourceConfiguration datasourceConfiguration) {
 
             return Mono.fromSupplier(() -> {
-                List<DatasourceStructure.Table> tableList;
-                try {
-                    tableList = connection.listBuckets()
-                            .stream()
-                            /* Get name of each bucket */
-                            .map(Bucket::getName)
-                            /* Get command templates and use it to create Table object */
-                            .map(bucketName -> new DatasourceStructure.Table(DatasourceStructure.TableType.BUCKET, "",
-                                    bucketName, new ArrayList<>(), new ArrayList<>(), getTemplates(bucketName,
-                                    DEFAULT_FILE_NAME)))
-                            /* Collect all Table objects in a list */
-                            .collect(Collectors.toList());
-                } catch (SdkClientException e) {
-                    throw new AppsmithPluginException(
-                            AppsmithPluginError.PLUGIN_GET_STRUCTURE_ERROR,
-                            "Appsmith server has failed to fetch list of buckets from database. Please check if " +
-                                    "the database credentials are valid and/or you have the required permissions."
-                    );
-                }
+                        List<DatasourceStructure.Table> tableList;
+                        try {
+                            tableList = connection.listBuckets()
+                                    .stream()
+                                    /* Get name of each bucket */
+                                    .map(Bucket::getName)
+                                    /* Get command templates and use it to create Table object */
+                                    .map(bucketName -> new DatasourceStructure.Table(DatasourceStructure.TableType.BUCKET, "",
+                                            bucketName, new ArrayList<>(), new ArrayList<>(), getTemplates(bucketName,
+                                            DEFAULT_FILE_NAME)))
+                                    /* Collect all Table objects in a list */
+                                    .collect(Collectors.toList());
+                        } catch (SdkClientException e) {
+                            throw new AppsmithPluginException(
+                                    AppsmithPluginError.PLUGIN_GET_STRUCTURE_ERROR,
+                                    "Appsmith server has failed to fetch list of buckets from database. Please check if " +
+                                            "the database credentials are valid and/or you have the required permissions."
+                            );
+                        }
 
-                return new DatasourceStructure(tableList);
-            })
+                        return new DatasourceStructure(tableList);
+                    })
                     .subscribeOn(scheduler);
         }
 
